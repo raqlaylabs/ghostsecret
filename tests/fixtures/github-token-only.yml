@@ -1,0 +1,13 @@
+name: Uses Only GITHUB_TOKEN
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        run: echo "deploying"
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}

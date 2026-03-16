@@ -8,6 +8,8 @@ import { prTargetCheckout } from "../src/rules/pr-target-checkout.js";
 import { noEmptyCheck } from "../src/rules/no-empty-check.js";
 import { undefinedSecret } from "../src/rules/undefined-secret.js";
 import { unusedSecret } from "../src/rules/unused-secret.js";
+import { getAllRules } from "../src/rules/index.js";
+import { BUILTIN_SECRETS } from "../src/constants.js";
 import type { AnalysisContext, WorkflowFile, SecretReference } from "../src/types.js";
 
 const fixtures = path.resolve(__dirname, "fixtures");
@@ -298,5 +300,88 @@ describe("unused-secret", () => {
     // API_KEY is not referenced (api_key !== API_KEY) → flagged as unused
     expect(results).toHaveLength(1);
     expect(results[0].secretName).toBe("API_KEY");
+  });
+});
+
+// ── built-in secret exclusion ────────────────────────────────────────────
+
+describe("built-in secret exclusion", () => {
+  function buildContextWithFilter(name: string): AnalysisContext {
+    const filePath = path.join(fixtures, name);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const wf = parseWorkflow(filePath);
+    const refs = extractSecrets(content, filePath, wf);
+    // Apply the same filtering the CLI does
+    const filteredRefs = refs.filter((ref) => !BUILTIN_SECRETS.has(ref.name));
+    return { workflows: [wf], secretRefs: filteredRefs };
+  }
+
+  it("does not flag GITHUB_TOKEN in any rule", () => {
+    const ctx = buildContextWithFilter("github-token-only.yml");
+    const rules = getAllRules();
+    const allResults = rules.flatMap((r) => r.check(ctx));
+    expect(allResults).toHaveLength(0);
+  });
+
+  it("still flags user secrets alongside GITHUB_TOKEN", () => {
+    // Build a synthetic workflow that uses both GITHUB_TOKEN and MY_KEY
+    const workflow: WorkflowFile = {
+      filePath: "mixed.yml",
+      triggers: [{ event: "pull_request" }],
+      jobs: [
+        {
+          id: "build",
+          steps: [
+            {
+              run: "echo test",
+              rawContent: "run: echo test",
+              lineNumber: 10,
+              env: {
+                TOKEN: "${{ secrets.GITHUB_TOKEN }}",
+                KEY: "${{ secrets.MY_KEY }}",
+              },
+            },
+          ],
+        },
+      ],
+      rawContent: "",
+    };
+    const allRefs: SecretReference[] = [
+      {
+        name: "GITHUB_TOKEN",
+        filePath: "mixed.yml",
+        lineNumber: 12,
+        column: 1,
+        context: "env",
+        triggers: workflow.triggers,
+      },
+      {
+        name: "MY_KEY",
+        filePath: "mixed.yml",
+        lineNumber: 13,
+        column: 1,
+        context: "env",
+        triggers: workflow.triggers,
+      },
+    ];
+    // Filter out built-in secrets, same as the CLI does
+    const filteredRefs = allRefs.filter(
+      (ref) => !BUILTIN_SECRETS.has(ref.name)
+    );
+    const ctx: AnalysisContext = {
+      workflows: [workflow],
+      secretRefs: filteredRefs,
+    };
+
+    const rules = getAllRules();
+    const allResults = rules.flatMap((r) => r.check(ctx));
+
+    // MY_KEY should be flagged by at least one rule, GITHUB_TOKEN by none
+    const githubTokenResults = allResults.filter(
+      (r) => r.secretName === "GITHUB_TOKEN"
+    );
+    const myKeyResults = allResults.filter((r) => r.secretName === "MY_KEY");
+    expect(githubTokenResults).toHaveLength(0);
+    expect(myKeyResults.length).toBeGreaterThan(0);
   });
 });

@@ -8,6 +8,7 @@ import { getAllRules } from "./rules/index.js";
 import { reportTerminal } from "./reporters/terminal.js";
 import { reportJson } from "./reporters/json.js";
 import { getRepoSecrets, detectRepoFromGit } from "./github/client.js";
+import { BUILTIN_SECRETS } from "./constants.js";
 import type {
   AnalysisContext,
   WorkflowFile,
@@ -63,8 +64,14 @@ program
       }
     }
 
+    // Filter out GitHub's built-in automatic secrets (e.g. GITHUB_TOKEN)
+    // so no rule flags them. The parser still extracts them accurately.
+    const filteredRefs = secretRefs.filter(
+      (ref) => !BUILTIN_SECRETS.has(ref.name)
+    );
+
     // Build context
-    const context: AnalysisContext = { workflows, secretRefs };
+    const context: AnalysisContext = { workflows, secretRefs: filteredRefs };
 
     // Remote validation with GitHub token
     const token = opts.token ?? process.env.GITHUB_TOKEN;
