@@ -1,0 +1,19 @@
+name: PR Target Workflow
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Use secret
+        run: echo "done"
+        env:
+          TOKEN: ${{ secrets.SENSITIVE_TOKEN }}

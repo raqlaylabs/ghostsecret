@@ -1,0 +1,12 @@
+name: Simple Push
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm build
+        env:
+          KEY: ${{ secrets.BUILD_KEY }}

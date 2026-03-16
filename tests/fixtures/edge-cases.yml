@@ -1,0 +1,54 @@
+name: Edge Case Gauntlet
+
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  COMBO: "${{ secrets.FIRST }}-${{ secrets.SECOND }}"
+
+jobs:
+  spacing-hell:
+    runs-on: ubuntu-latest
+    env:
+      JOB_SECRET: ${{secrets.NO_SPACES}}
+    steps:
+      - name: Weird spacing
+        run: echo ${{   secrets.LOTS_OF_SPACES   }}
+        env:
+          MIXED: ${{ secrets.MIXED_SPACES}}
+
+      - name: Multiline run
+        run: |
+          echo "starting"
+          export TOKEN=${{ secrets.MULTILINE_SECRET }}
+          curl -H "Authorization: Bearer ${{ secrets.BEARER_TOKEN }}" https://api.example.com
+          echo "done"
+
+      - name: Multiple on one line
+        run: echo "${{ secrets.LEFT_SECRET }}:${{ secrets.RIGHT_SECRET }}"
+
+  should-not-match:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not secrets
+        run: echo "${{ env.NOT_A_SECRET }}" && echo "${{ github.token }}" && echo "${{ vars.ALSO_NOT }}"
+        env:
+          REGULAR_VAR: ${{ env.SOMETHING }}
+          GITHUB_CTX: ${{ github.repository }}
+
+      # This line is commented out: ${{ secrets.COMMENTED_OUT }}
+      - name: Comment above should not match
+        run: echo "no secrets here"
+
+  no-steps-job:
+    runs-on: ubuntu-latest
+    if: always()
+
+  conditional-secrets:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.JOB_GATE != '' }}
+    steps:
+      - name: Nested expression
+        if: ${{ github.event_name == 'push' && secrets.NESTED_CHECK != '' }}
+        run: echo "conditional"
+        env:
+          GATE: ${{ secrets.NESTED_CHECK }}
