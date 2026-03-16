@@ -1,0 +1,35 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  GLOBAL_SECRET: ${{ secrets.GLOBAL_TOKEN }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: npm test
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy
+        if: ${{ secrets.DEPLOY_TOKEN != '' }}
+        uses: some/deploy-action@v1
+        with:
+          token: ${{ secrets.DEPLOY_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint
+        run: echo "linting with ${{ secrets.LINT_KEY }}"
