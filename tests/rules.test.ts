@@ -6,6 +6,8 @@ import { extractSecrets } from "../src/parser/secrets.js";
 import { secretsInForkPr } from "../src/rules/secrets-in-fork-pr.js";
 import { prTargetCheckout } from "../src/rules/pr-target-checkout.js";
 import { noEmptyCheck } from "../src/rules/no-empty-check.js";
+import { undefinedSecret } from "../src/rules/undefined-secret.js";
+import { unusedSecret } from "../src/rules/unused-secret.js";
 import type { AnalysisContext, WorkflowFile, SecretReference } from "../src/types.js";
 
 const fixtures = path.resolve(__dirname, "fixtures");
@@ -175,5 +177,126 @@ describe("no-empty-check", () => {
     const flaggedNames = results.map((r) => r.secretName);
     expect(flaggedNames).not.toContain("JOB_GATE");
     expect(results).toHaveLength(9);
+  });
+});
+
+// ── undefined-secret ────────────────────────────────────────────────────
+
+describe("undefined-secret", () => {
+  function makeCtx(
+    refNames: string[],
+    repoSecrets?: string[]
+  ): AnalysisContext {
+    const workflow: WorkflowFile = {
+      filePath: "test.yml",
+      triggers: [{ event: "push" }],
+      jobs: [],
+      rawContent: "",
+    };
+    const secretRefs: SecretReference[] = refNames.map((name, i) => ({
+      name,
+      filePath: "test.yml",
+      lineNumber: i + 1,
+      column: 1,
+      context: "env" as const,
+      triggers: workflow.triggers,
+    }));
+    return { workflows: [workflow], secretRefs, repoSecrets };
+  }
+
+  it("flags secrets not in repo when repoSecrets is provided", () => {
+    const ctx = makeCtx(["API_KEY", "DATABASE_URL", "TYPO_KEY"], [
+      "API_KEY",
+      "DATABASE_URL",
+    ]);
+    const results = undefinedSecret.check(ctx);
+    expect(results).toHaveLength(1);
+    expect(results[0].secretName).toBe("TYPO_KEY");
+    expect(results[0].severity).toBe("error");
+  });
+
+  it("suggests fuzzy match for typos", () => {
+    const ctx = makeCtx(["SUPABASE_KY"], ["SUPABASE_KEY"]);
+    const results = undefinedSecret.check(ctx);
+    expect(results).toHaveLength(1);
+    expect(results[0].suggestedFix).toContain("Did you mean");
+    expect(results[0].suggestedFix).toContain("SUPABASE_KEY");
+  });
+
+  it("does not suggest match when distance > 2", () => {
+    const ctx = makeCtx(["API_KEY"], ["COMPLETELY_DIFFERENT"]);
+    const results = undefinedSecret.check(ctx);
+    expect(results).toHaveLength(1);
+    expect(results[0].suggestedFix).not.toContain("Did you mean");
+  });
+
+  it("skips entirely when repoSecrets is undefined", () => {
+    const ctx = makeCtx(["API_KEY"], undefined);
+    const results = undefinedSecret.check(ctx);
+    expect(results).toHaveLength(0);
+  });
+
+  it("does not flag secrets that are defined", () => {
+    const ctx = makeCtx(["API_KEY", "DB_URL"], ["API_KEY", "DB_URL"]);
+    const results = undefinedSecret.check(ctx);
+    expect(results).toHaveLength(0);
+  });
+});
+
+// ── unused-secret ───────────────────────────────────────────────────────
+
+describe("unused-secret", () => {
+  function makeCtx(
+    refNames: string[],
+    repoSecrets?: string[]
+  ): AnalysisContext {
+    const workflow: WorkflowFile = {
+      filePath: "test.yml",
+      triggers: [{ event: "push" }],
+      jobs: [],
+      rawContent: "",
+    };
+    const secretRefs: SecretReference[] = refNames.map((name, i) => ({
+      name,
+      filePath: "test.yml",
+      lineNumber: i + 1,
+      column: 1,
+      context: "env" as const,
+      triggers: workflow.triggers,
+    }));
+    return { workflows: [workflow], secretRefs, repoSecrets };
+  }
+
+  it("flags defined secrets not referenced in any workflow", () => {
+    const ctx = makeCtx(["API_KEY", "DB_URL"], [
+      "API_KEY",
+      "OLD_TOKEN",
+      "DB_URL",
+    ]);
+    const results = unusedSecret.check(ctx);
+    expect(results).toHaveLength(1);
+    expect(results[0].secretName).toBe("OLD_TOKEN");
+    expect(results[0].severity).toBe("info");
+  });
+
+  it("skips when repoSecrets is undefined", () => {
+    const ctx = makeCtx(["API_KEY"], undefined);
+    const results = unusedSecret.check(ctx);
+    expect(results).toHaveLength(0);
+  });
+
+  it("returns nothing when all secrets are used", () => {
+    const ctx = makeCtx(["API_KEY"], ["API_KEY"]);
+    const results = unusedSecret.check(ctx);
+    expect(results).toHaveLength(0);
+  });
+
+  it("handles case sensitivity correctly", () => {
+    // GitHub secrets are uppercase; references are case-sensitive
+    const ctx = makeCtx(["api_key"], ["API_KEY"]);
+    const results = unusedSecret.check(ctx);
+    // API_KEY is not referenced (api_key !== API_KEY) → flagged as unused
+    expect(results).toHaveLength(1);
+    expect(results[0].secretName).toBe("API_KEY");
   });
 });
