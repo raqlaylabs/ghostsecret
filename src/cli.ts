@@ -18,7 +18,7 @@ import type {
 const program = new Command();
 
 program
-  .name("gh-secrets-check")
+  .name("ghostsecret")
   .description("Lint GitHub Actions workflows for secret misuse")
   .version("0.1.0")
   .option("--path <dir>", "Path to repo root", ".")

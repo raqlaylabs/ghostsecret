@@ -23,7 +23,7 @@ interface SecretEntry {
 }
 
 export function reportTerminal(results: LintResult[]): number {
-  console.log(`  ${chalk.dim(`gh-secrets-check v${VERSION}`)}`);
+  console.log(`  ${chalk.dim(`ghostsecret v${VERSION}`)}`);
 
   if (results.length === 0) {
     console.log();

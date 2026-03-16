@@ -27,7 +27,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm run build
-      - name: Run gh-secrets-check on itself
+      - name: Run ghostsecret on itself
         run: node dist/cli.js --strict
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

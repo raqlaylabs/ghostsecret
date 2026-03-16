@@ -1,10 +1,10 @@
-# gh-secrets-check
+# ghostsecret
 
-**Catch GitHub Actions secrets that silently resolve to empty strings before they break your workflows.**
+**Find the GitHub Actions secrets that silently disappear.**
 
-[![npm version](https://img.shields.io/npm/v/gh-secrets-check)](https://www.npmjs.com/package/gh-secrets-check)
-[![license](https://img.shields.io/npm/l/gh-secrets-check)](./LICENSE)
-[![node](https://img.shields.io/node/v/gh-secrets-check)](https://nodejs.org)
+[![npm version](https://img.shields.io/npm/v/ghostsecret)](https://www.npmjs.com/package/ghostsecret)
+[![license](https://img.shields.io/npm/l/ghostsecret)](./LICENSE)
+[![node](https://img.shields.io/node/v/ghostsecret)](https://nodejs.org)
 
 ## The Problem
 
@@ -14,16 +14,16 @@ GitHub Actions secrets silently resolve to empty strings in certain contexts —
 
 ```bash
 # Scan current repo
-npx gh-secrets-check
+npx ghostsecret
 
 # Scan a specific repo
-npx gh-secrets-check --path /path/to/repo
+npx ghostsecret --path /path/to/repo
 
 # With GitHub token for typo detection
-GITHUB_TOKEN=ghp_xxx npx gh-secrets-check
+GITHUB_TOKEN=ghp_xxx npx ghostsecret
 
 # JSON output for CI
-npx gh-secrets-check --format json
+npx ghostsecret --format json
 ```
 
 ## What It Catches
@@ -39,7 +39,7 @@ npx gh-secrets-check --format json
 ## Example Output
 
 ```
-  gh-secrets-check v0.1.0
+  ghostsecret v0.1.0
 
   sample-ci.yml
 
@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check secrets usage
-        run: npx gh-secrets-check --strict
+        run: npx ghostsecret --strict
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
