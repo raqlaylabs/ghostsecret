@@ -42,10 +42,10 @@ export const prTargetCheckout: LintRule = {
           ruleId: this.id,
           severity: this.defaultSeverity,
           message:
-            "Dangerous pattern: pull_request_target with PR head checkout and secrets. An attacker can submit a malicious PR that exfiltrates secrets.",
+            "Dangerous: pull_request_target + PR head checkout + secrets = exfiltration risk",
           filePath: workflow.filePath,
           suggestedFix:
-            "Never checkout untrusted PR code in a pull_request_target workflow that has access to secrets. Use a two-workflow pattern: pull_request for untrusted code, then workflow_run for trusted operations with secrets.",
+            "Never checkout untrusted PR code in workflows with secret access. Use a two-workflow pattern.",
         },
       ];
     });

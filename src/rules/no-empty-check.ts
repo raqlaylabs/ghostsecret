@@ -32,11 +32,11 @@ export const noEmptyCheck: LintRule = {
         {
           ruleId: this.id,
           severity: this.defaultSeverity,
-          message: `Secret "${ref.name}" is used without an empty-string check. If this secret is unavailable (e.g., fork PRs, missing config), the step will run with an empty value and may fail with a misleading error.`,
+          message: "Secrets used without empty-string guards",
           filePath: ref.filePath,
           lineNumber: ref.lineNumber,
           secretName: ref.name,
-          suggestedFix: `Add a condition: if: \${{ secrets.${ref.name} != '' }}`,
+          suggestedFix: `Add: if: \${{ secrets.${ref.name} != '' }}`,
         },
       ];
     });

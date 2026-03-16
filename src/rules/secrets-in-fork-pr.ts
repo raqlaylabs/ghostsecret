@@ -24,12 +24,12 @@ export const secretsInForkPr: LintRule = {
         {
           ruleId: this.id,
           severity: this.defaultSeverity,
-          message: `Secret "${ref.name}" is used in a workflow triggered by pull_request. This secret will be empty on pull requests from forks.`,
+          message: "Secrets will be empty on fork PRs (trigger: pull_request)",
           filePath: ref.filePath,
           lineNumber: ref.lineNumber,
           secretName: ref.name,
           suggestedFix:
-            "Consider splitting into two workflows: one for fork PRs (no secrets) and one triggered by pull_request_target or workflow_run for trusted operations.",
+            "Split into two workflows: fork PRs (no secrets) + pull_request_target for trusted ops",
         },
       ];
     });

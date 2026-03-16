@@ -26,7 +26,7 @@ describe("CLI end-to-end", () => {
     const out = run(`--path ${fixturesRepo}`);
     // Should contain warnings or info (sample-ci.yml has pull_request trigger + secrets)
     expect(out.length).toBeGreaterThan(0);
-    expect(out).toMatch(/issues?|No issues found/);
+    expect(out).toMatch(/issues|All clear/);
   });
 
   it("json output is valid JSON", () => {
