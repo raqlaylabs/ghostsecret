@@ -1,10 +1,10 @@
 {
   "name": "ghostsecret",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find the GitHub Actions secrets that silently disappear",
   "main": "dist/cli.js",
   "bin": {
-    "ghostsecret": "./dist/cli.js"
+    "ghostsecret": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx src/cli.ts",
